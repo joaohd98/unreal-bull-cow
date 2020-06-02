@@ -1,15 +1,47 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "BullCowCartridge.h"
+#include "HiddenWordsList.h"
+#include "Math/UnrealMathUtility.h"
+
+void UBullCowCartridge::BeginPlay() // When the game starts
+{
+  Super::BeginPlay();
+
+  GetValidWords(HiddenWordsList);
+  SetupGame();
+
+}
+
+void UBullCowCartridge::GetValidWords(const TArray<FString>& words)  {
+  // const FString WordListPath = FPaths::ProjectContentDir() / TEXT("WordsLists/HiddenWordList.txt");
+  // FFileHelper::LoadFileToStringArrayWithPredicate(WordList, *WordListPath, [this](const FString Word) { 
+  //   return IsIsogram(Word); 
+  // });
+  // for(int32 i = 0; i < HiddenWordsList.Num(); i++) {
+  //   FString Word = HiddenWordsList[i];
+  //   if(IsIsogram(Word)) {
+  //     WordList.Emplace(Word);
+  //   }
+  // }
+
+  for(FString Word: words) {
+    if(Word.Len() > 4 && IsIsogram(*Word)) {
+      WordList.Emplace(Word);
+    }
+  }
+}
 
 void UBullCowCartridge::SetupGame()
 {
   PrintLine(TEXT("Welcome Message"));
 
-  HiddenWord = TEXT("cakes");
+  HiddenWord = WordList[FMath::RandRange(0, WordList.Num())];
   int32 SizeHiddenWord = HiddenWord.Len();
   Lives = SizeHiddenWord;
   bGameOver = false;
 
+  PrintLine(FString::Printf(TEXT("The word is %s"), *HiddenWord));
+  PrintLine(FString::Printf(TEXT("The number of possible words is %d "), WordList.Num()));
   PrintLine(FString::Printf(TEXT("Guest the %d letter word"), SizeHiddenWord));
   PrintLine(FString::Printf(TEXT("You have %d lives"), Lives));
   PrintLine(TEXT("Type something then press enter"));
@@ -21,13 +53,19 @@ void UBullCowCartridge::EndGame()
   bGameOver = true;
 }
 
-void UBullCowCartridge::BeginPlay() // When the game starts
+void UBullCowCartridge::OnInput(const FString& Input) // When the player hits enter
 {
-  Super::BeginPlay();
-  SetupGame();    
+  if(bGameOver) {
+    ClearScreen();
+    SetupGame();
+  }
+
+  else {
+    ProcessGuess(*Input);
+  }
 }
 
-void UBullCowCartridge::ProcessGuess(FString Guess) 
+void UBullCowCartridge::ProcessGuess(const FString& Guess) 
 {
   if(Guess == HiddenWord) {
     PrintLine(TEXT("you have won!!!!!"));
@@ -44,7 +82,7 @@ void UBullCowCartridge::ProcessGuess(FString Guess)
       PrintLine(FString::Printf(TEXT("the hidden word has %d letters!!!!!"), SizeHiddenWord)); 
     }
 
-    else if(!IsIsogram(Guess)) {
+    else if(!IsIsogram(*Guess)) {
       PrintLine(TEXT("No repeating letter, guess another")); 
     }
     
@@ -59,22 +97,9 @@ void UBullCowCartridge::ProcessGuess(FString Guess)
 
 }
   
-void UBullCowCartridge::OnInput(const FString& Input) // When the player hits enter
+bool UBullCowCartridge::IsIsogram(const FString& Guess) const
 {
-  if(bGameOver) {
-    ClearScreen();
-    SetupGame();
-  }
-
-  else {
-    ProcessGuess(Input);
-  }
-}
-
-bool UBullCowCartridge::IsIsogram(FString Guess) const
-{
-
- const int32 size = Guess.Len();
+  const int32 size = Guess.Len();
 
   for(int32 i = 0; i < size; i++) {
     for(int32 comparasion = i + 1; comparasion < size; comparasion++) {
